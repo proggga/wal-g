@@ -97,15 +97,23 @@ func LastKnownInBackupTS(backups []models.Backup) (models.Timestamp, error) {
 	return minTS, nil
 }
 
-func TimedBackupToMongoModel(backups []internal.TimedBackup) []models.Backup {
-	if backups == nil {
-		return nil
+func GetMongoBackups(backups []models.Backup, purgeBackups, retainBackups map[string]bool) (purge, retain []models.Backup) {
+	for _, backup := range backups {
+		if purgeBackups[backup.Name()] {
+			if purge == nil {
+				purge = make([]models.Backup, 0)
+			}
+			purge = append(purge, backup)
+			continue
+		}
+		if retainBackups[backup.Name()] {
+			if retain == nil {
+				retain = make([]models.Backup, 0)
+			}
+			retain = append(retain, backup)
+		}
 	}
-	result := make([]models.Backup, len(backups))
-	for i := range backups {
-		result[i] = backups[i].(models.Backup)
-	}
-	return result
+	return purge, retain
 }
 
 func MongoModelToTimedBackup(backups []models.Backup) []internal.TimedBackup {
